@@ -1,0 +1,45 @@
+DeFakeIt/
+│
+├── backend/                 # 🚀 FastAPI backend (routes + core logic)
+│   ├── main.py              # Entry point
+│   ├── model.py             # BERT-LSTM inference logic
+│   ├── shap_explainer.py    # SHAP explanation generation
+│   ├── preprocessing.py     # Tokenization, cleaning
+│   ├── routes.py            # API routes (predict, feedback, etc.)
+│   ├── sms_alerts.py        # Twilio alert logic
+│   ├── database.py          # MongoDB connection + queries
+│   └── scheduler.py         # News scraping + periodic retraining
+│
+├── frontend/                # 🖥️ Streamlit app (all scripts here)
+│   ├── Home.py              # News verification UI
+│   ├── SHAP.py              # SHAP visual explanation
+│   ├── Feedback.py          # Feedback form
+│   └── Subscribe.py         # SMS form
+│
+├── model/                   # 🧠 Model training (not used in production)
+│   ├── train.py             # BERT-LSTM training pipeline
+│   ├── evaluate.py          # Model testing & performance
+│   ├── bert_lstm_model.py   # Architecture definition
+│   ├── tokenizer.pkl        # Saved tokenizer
+│   └── model.pt             # Trained model weights
+│
+├── data/                    # 📊 All datasets
+│   ├── isot_fake_news.csv   # Original dataset
+│   ├── processed.json       # Cleaned and preprocessed samples
+│   └── new_articles.json    # Fetched live news
+│
+├── docker/                  # 🐳 Deployment files
+│   ├── Dockerfile.backend   # For FastAPI backend
+│   ├── Dockerfile.frontend  # For Streamlit UI
+│   └── docker-compose.yml
+│
+├── tests/                   # 🧪 Unit tests (flat structure)
+│   ├── test_backend.py
+│   ├── test_model.py
+│   └── test_utils.py
+│
+├── requirements.txt         # 📦 Python dependencies
+├── README.md                # 📘 Project overview
+├── .env                     # 🔐 Secrets & configs
+├── .gitignore
+└── LICENSE
