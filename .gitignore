@@ -1,7 +1,73 @@
-"path/to/large_file" 
-# Ignore model files
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Translations
+*.mo
+*.pot
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local env files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Data files
+data/*.csv
+data/*.json
+
+# Model files
+model/tokenizer.pkl
 model/model.pt
 
-# Ignore large data files
-data/isot_fake_news.csv
-data/processed.json
+# Docker
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Streamlit cache (optional)
+.streamlit/
+
+# Misc
+*.DS_Store
