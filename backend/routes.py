@@ -1,15 +1,12 @@
+import shap
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from fastapi.responses import HTMLResponse
 
-from backend.shap_explainer import get_shap_explanation
+from backend.shap_explainer import explain_text
 from backend.database import feedback, subscribers
 from backend.sms_alerts import send_sms
-from model.predict import predict_news as run_prediction
-
-import shap
-import matplotlib.pyplot as plt
-import io
-import base64
+from model.predict import predict_news
 import logging
 
 router = APIRouter()
@@ -55,27 +52,29 @@ def alert_subscribers(news_title: str):
 @router.post("/predict")
 async def predict_fake_news(item: NewsText):
     try:
-        result = run_prediction(item.text)
+        result = predict_news(item.text)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
-# ====== 🔹 SHAP Explanation Endpoint ======
+# ====== 🔹 SHAP Explanation Endpoint (HTML) ======
 
-@router.post("/explain")
+@router.post("/explain", response_class=HTMLResponse)
 def explain_news(data: NewsText):
     try:
-        shap_values = get_shap_explanation(data.text)
+        shap_values = explain_text(data.text)
 
-        shap_html = shap.plots.text(shap_values[0], display=False)
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png")
-        plt.close()
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-        html_img = f'<img src="data:image/png;base64,{img_base64}" />'
-
-        return {"shap_html": html_img}
+        # Generate interactive HTML from SHAP
+        html = f"""
+        <html>
+        <head><title>SHAP Explanation</title></head>
+        <body>
+        <h3>SHAP Explanation for: <i>{data.text[:100]}...</i></h3>
+        {shap.plots.text(shap_values[0], display=False)}
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"SHAP explanation failed: {str(e)}")
 

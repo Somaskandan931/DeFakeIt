@@ -2,16 +2,16 @@
 import torch
 import pickle
 from transformers import BertTokenizer
-from bert_lstm_model import BERTLSTMClassifier
+from model.bert_lstm_model import BERTLSTMClassifier
 
 # Load tokenizer
-with open("model/tokenizer.pkl", "rb") as f:
+with open("C:/Users/somas/PycharmProjects/DeFakeIt/model/tokenizer.pkl", "rb") as f:
     tokenizer = pickle.load(f)
 
 # Load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = BERTLSTMClassifier()
-model.load_state_dict(torch.load("model/model.pt", map_location=device))
+model.load_state_dict(torch.load("C:/Users/somas/PycharmProjects/DeFakeIt/model/model.pt", map_location=device))
 model.to(device)
 model.eval()
 

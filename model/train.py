@@ -1,27 +1,29 @@
 # model/train.py
 
+import os
+import pickle
 import pandas as pd
 import torch
-from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from transformers import BertTokenizer
 from sklearn.metrics import accuracy_score
-import pickle
-import os
+from sklearn.model_selection import train_test_split
+
 from bert_lstm_model import BERTLSTMClassifier
 
-# Set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Parameters
+# ==== 🔹 Configuration ====
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 16
 EPOCHS = 4
 LR = 2e-5
-MODEL_PATH = "model/model.pt"
-TOKENIZER_PATH = "model/tokenizer.pkl"
 
-# Dataset class
+DATASET_PATH = "C:/Users/somas/PycharmProjects/DeFakeIt/data/isot_fake_news.csv"
+MODEL_PATH = "C:/Users/somas/PycharmProjects/DeFakeIt/model/model.pt"
+TOKENIZER_PATH = "C:/Users/somas/PycharmProjects/DeFakeIt/model/tokenizer.pkl"
+
+# ==== 🔹 Dataset Class ====
 class NewsDataset(Dataset):
     def __init__(self, texts, labels, tokenizer, max_len=512):
         self.texts = texts
@@ -46,42 +48,46 @@ class NewsDataset(Dataset):
             'label': torch.tensor(self.labels[idx], dtype=torch.long)
         }
 
-# Load data
+# ==== 🔹 Load and Split Data ====
 def load_data():
-    train_df = pd.read_csv("data/train.csv")
-    val_df = pd.read_csv("data/val.csv")
-    return train_df, val_df
+    df = pd.read_csv(DATASET_PATH)
+    train_df, val_df = train_test_split(df, test_size=0.2, random_state=42, stratify=df['label'])
+    return train_df.reset_index(drop=True), val_df.reset_index(drop=True)
 
-# Training function
+# ==== 🔹 Training Loop ====
 def train():
+    # Load data and tokenizer
     train_df, val_df = load_data()
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
     # Save tokenizer
+    os.makedirs(os.path.dirname(TOKENIZER_PATH), exist_ok=True)
     with open(TOKENIZER_PATH, "wb") as f:
         pickle.dump(tokenizer, f)
 
+    # Prepare datasets and loaders
     train_dataset = NewsDataset(train_df.text.tolist(), train_df.label.tolist(), tokenizer)
     val_dataset = NewsDataset(val_df.text.tolist(), val_df.label.tolist(), tokenizer)
-
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
-    model = BERTLSTMClassifier().to(device)
+    # Model, loss, optimizer
+    model = BERTLSTMClassifier().to(DEVICE)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=LR)
 
     best_val_acc = 0.0
 
+    # ==== 🔁 Training Epochs ====
     for epoch in range(EPOCHS):
         model.train()
         total_loss = 0
         all_preds, all_labels = [], []
 
         for batch in train_loader:
-            input_ids = batch['input_ids'].to(device)
-            attention_mask = batch['attention_mask'].to(device)
-            labels = batch['label'].to(device)
+            input_ids = batch['input_ids'].to(DEVICE)
+            attention_mask = batch['attention_mask'].to(DEVICE)
+            labels = batch['label'].to(DEVICE)
 
             optimizer.zero_grad()
             outputs = model(input_ids, attention_mask)
@@ -95,16 +101,17 @@ def train():
             all_labels.extend(labels.cpu().numpy())
 
         train_acc = accuracy_score(all_labels, all_preds)
-        print(f"Epoch {epoch+1}/{EPOCHS} | Train Loss: {total_loss:.4f} | Train Acc: {train_acc:.4f}")
+        print(f"\n📘 Epoch {epoch+1}/{EPOCHS}")
+        print(f"   🔹 Train Loss: {total_loss:.4f} | Train Accuracy: {train_acc:.4f}")
 
-        # Validation
+        # ==== 🔍 Validation ====
         model.eval()
         val_preds, val_labels = [], []
         with torch.no_grad():
             for batch in val_loader:
-                input_ids = batch['input_ids'].to(device)
-                attention_mask = batch['attention_mask'].to(device)
-                labels = batch['label'].to(device)
+                input_ids = batch['input_ids'].to(DEVICE)
+                attention_mask = batch['attention_mask'].to(DEVICE)
+                labels = batch['label'].to(DEVICE)
 
                 outputs = model(input_ids, attention_mask)
                 preds = torch.argmax(outputs, dim=1)
@@ -112,14 +119,15 @@ def train():
                 val_labels.extend(labels.cpu().numpy())
 
         val_acc = accuracy_score(val_labels, val_preds)
-        print(f"Validation Accuracy: {val_acc:.4f}")
+        print(f"   ✅ Validation Accuracy: {val_acc:.4f}")
 
         # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
             torch.save(model.state_dict(), MODEL_PATH)
-            print("✅ Model saved.")
+            print("   💾 Model saved.")
 
+# ==== 🔹 Entry Point ====
 if __name__ == "__main__":
-    os.makedirs("model", exist_ok=True)
     train()

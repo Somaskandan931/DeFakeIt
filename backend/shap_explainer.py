@@ -1,34 +1,35 @@
-import shap
+# backend/shap_explainer.py
+
 import torch
+import shap
 from backend.model import model, tokenizer
 
-# Make sure the model is in eval mode and on CPU (or CUDA if available)
+# Ensure model is in evaluation mode and on correct device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 model.eval()
 
-def get_shap_explanation(text):
-    # Tokenize input text with padding/truncation
-    inputs = tokenizer([text], return_tensors="pt", truncation=True, padding=True)
-    input_ids = inputs["input_ids"]
-    attention_mask = inputs["attention_mask"]
+# Define a function to return probabilities from model
+def predict_proba(texts):
+    inputs = tokenizer(
+        texts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=512
+    )
+    input_ids = inputs["input_ids"].to(device)
+    attention_mask = inputs["attention_mask"].to(device)
 
-    # Define a prediction function compatible with SHAP
-    def model_forward(input_ids_attention_mask):
-        input_ids = torch.tensor(input_ids_attention_mask[0]).to(next(model.parameters()).device)
-        attention_mask = torch.tensor(input_ids_attention_mask[1]).to(next(model.parameters()).device)
+    with torch.no_grad():
+        outputs = model(input_ids, attention_mask)
+        probs = torch.softmax(outputs, dim=1)
+    return probs.cpu().numpy()
 
-        with torch.no_grad():
-            outputs = model(input_ids, attention_mask)
-            probs = torch.softmax(outputs, dim=1).cpu().numpy()
-        return probs
+# Initialize the SHAP explainer (only once)
+explainer = shap.Explainer(predict_proba, shap.maskers.Text(tokenizer))
 
-    # SHAP expects input as a list of arrays (for each input arg to model_forward)
-    explainer = shap.Explainer(model_forward, masker=shap.maskers.Text(tokenizer))
-
-    # Prepare input as a tuple/list matching model_forward inputs
-    # Since tokenizer returns dict of tensors, extract to lists for SHAP
-    input_for_shap = [input_ids[0].tolist(), attention_mask[0].tolist()]
-
-    # Get SHAP values for the single input
-    shap_values = explainer([input_for_shap])
-
+# Main explanation function
+def explain_text(text: str):
+    shap_values = explainer([text])
     return shap_values

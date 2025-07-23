@@ -1,0 +1,32 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+function ShapExplanation({ inputText }) {
+  const [shapHtml, setShapHtml] = useState(null);
+
+  useEffect(() => {
+    const explain = async () => {
+      if (!inputText) return;
+      try {
+        const response = await axios.post("http://localhost:8000/explain", { text: inputText });
+        setShapHtml(response.data.shap_html);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    explain();
+  }, [inputText]);
+
+  return (
+    <div>
+      <h3>🔍 SHAP Explanation</h3>
+      {shapHtml ? (
+        <div dangerouslySetInnerHTML={{ __html: shapHtml }} />
+      ) : (
+        <p>No explanation available.</p>
+      )}
+    </div>
+  );
+}
+
+export default ShapExplanation;
