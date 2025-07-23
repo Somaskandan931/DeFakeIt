@@ -1,1 +1,7 @@
 "path/to/large_file" 
+# Ignore model files
+model/model.pt
+
+# Ignore large data files
+data/isot_fake_news.csv
+data/processed.json
